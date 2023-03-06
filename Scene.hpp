@@ -1,0 +1,76 @@
+//
+//  Scene.hpp
+//  raytracer_2
+//
+//  Created by Sofia Iannicelli on 2/15/23.
+//
+
+#ifndef Scene_hpp
+#define Scene_hpp
+
+#include <stdio.h>
+#include <vector>
+#include "Camera.h"
+#include "Sphere.h"
+
+class Scene {
+private:
+    Camera* camera;
+    vec3<double> directionToLight;
+    vec3<double> lightColor;
+    vec3<double> ambientLight;
+    vec3<double> backgroundColor;
+    std::vector<Object*> objectPtrs;
+
+public:
+    Scene() {
+        camera = new Camera();
+        this->directionToLight = vec3<double>(0, 1, 0);
+        this->lightColor = vec3<double>(1.0, 1.0, 1.0);
+        this->ambientLight = vec3<double>(0.1, 0.1, 0.1);
+        this->backgroundColor = vec3<double>(0.2, 0.2, 0.2);
+    }
+    
+    Scene(Camera* camera, vec3<double> directionToLight, vec3<double> lightColor, vec3<double> ambientLight, vec3<double> backgroundColor,
+          std::vector<Object*> objectPtrs) {
+        this->camera = camera;
+        this->directionToLight = getUnitVector(directionToLight);
+        this->lightColor = lightColor;
+        this->ambientLight = ambientLight;
+        this->backgroundColor = backgroundColor;
+        this->objectPtrs = objectPtrs;
+    }
+    
+    ~Scene() {
+        for(Object* objectPtr: objectPtrs) {
+            // delete spherePtr;
+        }
+    }
+    
+    Camera* getCamera() { return camera; }
+    vec3<double> getDirectionToLight() { return directionToLight; }
+    vec3<double> getLightColor() { return lightColor; }
+    vec3<double> getAmbientLight() { return ambientLight; }
+    vec3<double> getBackgroundColor() { return backgroundColor; }
+    std::vector<Object*> getObjectPtrs() { return objectPtrs; }
+    
+    void addObject(Object* object) {
+        this->objectPtrs.push_back(object);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, Scene const &scene) {
+        os << scene.camera << std::endl;
+        os << "Direction to Light: " << scene.directionToLight << std::endl;
+        os << "Light Color: " << scene.lightColor << std::endl;
+        os << "Ambient Light: " << scene.ambientLight << std::endl;
+        os << "Background Color: " << scene.backgroundColor << std::endl;
+        os << std::endl;
+        for(int i = 0; i < scene.objectPtrs.size(); ++i) {
+            os << "Object: " << scene.objectPtrs[i]->toString() << std::endl;
+        }
+        return os;
+    }
+
+};
+
+#endif /* Scene_hpp */
