@@ -14,10 +14,10 @@
 
 class TriangleMesh : public Object, public Triangle {
 public:
-    TriangleMesh(std::vector<vec3<double>> vertices, double kd, double ks, double ka, vec3<double> objectColor, vec3<double> objectSpecular, double kgls, double refl): Object(kd, ks, ka, kgls, objectColor, objectSpecular, refl, ""), Triangle(vertices) {
+    TriangleMesh(std::vector<vec3<double>*> vertices, double kd, double ks, double ka, vec3<double> objectColor, vec3<double> objectSpecular, double kgls, double refl): Object(kd, ks, ka, kgls, objectColor, objectSpecular, refl, ""), Triangle(vertices) {
     }
     
-    TriangleMesh(std::vector<vec3<double>> vertices, double kd, double ks, double ka, vec3<double> objectColor, vec3<double> objectSpecular, double kgls, double refl, std::string description): Object(kd, ks, ka, kgls, objectColor, objectSpecular, refl, description), Triangle(vertices){
+    TriangleMesh(std::vector<vec3<double>*> vertices, double kd, double ks, double ka, vec3<double> objectColor, vec3<double> objectSpecular, double kgls, double refl, std::string description): Object(kd, ks, ka, kgls, objectColor, objectSpecular, refl, description), Triangle(vertices){
     }
     
     vec3<double> getIntersectionNormal(vec3<double> intersectionPoint);

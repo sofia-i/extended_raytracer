@@ -49,6 +49,9 @@ public:
     
     Camera* getCamera() { return camera; }
     vec3<double> getDirectionToLight() { return directionToLight; }
+    void setDirectionToLight(vec3<double> directionToLight) {
+        this->directionToLight = directionToLight;
+    }
     vec3<double> getLightColor() { return lightColor; }
     vec3<double> getAmbientLight() { return ambientLight; }
     vec3<double> getBackgroundColor() { return backgroundColor; }

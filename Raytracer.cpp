@@ -1,5 +1,5 @@
 //
-//  Raytracer.cpp
+//  Raytracer.cpp/Users/sofiaiannicelli/Documents/BYU_WINTER_2023/graphics/raytracer_3/raytracer_ext/outputs/output_image_test.ppm
 //  raytracer_2
 //
 //  Created by Sofia Iannicelli on 2/15/23.
@@ -26,7 +26,7 @@ int*** Raytracer::raytrace(Scene scene, int numColumns, int numRows) {
     for(int i = 0; i < numRows; ++i) {
         for(int j = 0; j < numColumns; ++j) {
             // TODO: remove
-            if(i == 125 && j == 125) {
+            if(i == 100 && j == 100) {
                 std::string stop = "stop here";
             }
             vec3<int> pixelColor = getRayResult((j * u_inc - max_u) * u_axis + (max_v - i * v_inc) * v_axis);

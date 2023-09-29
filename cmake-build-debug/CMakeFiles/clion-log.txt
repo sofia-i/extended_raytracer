@@ -1,31 +1,9 @@
 /Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/Library/Developer/CommandLineTools/usr/bin/cc -DCMAKE_CXX_COMPILER=/Library/Developer/CommandLineTools/usr/bin/c++ -G "CodeBlocks - Unix Makefiles" /Users/sofiaiannicelli/Documents/BYU_WINTER_2023/graphics/raytracer_3/raytracer_ext
-CMake Warning (dev) in CMakeLists.txt:
-  No project() command is present.  The top-level CMakeLists.txt file must
-  contain a literal, direct call to the project() command.  Add a line of
-  code such as
+CMake Error at CMakeLists.txt:34 (target_link_libraries):
+  Cannot specify link libraries for target "MyExample" which is not built by
+  this project.
 
-    project(ProjectName)
 
-  near the top of the file, but after cmake_minimum_required().
-
-  CMake is pretending there is a "project(Project)" command on the first
-  line.
-This warning is for project developers.  Use -Wno-dev to suppress it.
-
--- The C compiler identification is AppleClang 14.0.0.14000029
--- The CXX compiler identification is AppleClang 14.0.0.14000029
--- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
--- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc - works
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Detecting C compile features
--- Detecting C compile features - done
--- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
--- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ - works
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- Configuring done
--- Generating done
--- Build files have been written to: /Users/sofiaiannicelli/Documents/BYU_WINTER_2023/graphics/raytracer_3/raytracer_ext/cmake-build-debug
+-- Configuring incomplete, errors occurred!
+See also "/Users/sofiaiannicelli/Documents/BYU_WINTER_2023/graphics/raytracer_3/raytracer_ext/cmake-build-debug/CMakeFiles/CMakeOutput.log".
+See also "/Users/sofiaiannicelli/Documents/BYU_WINTER_2023/graphics/raytracer_3/raytracer_ext/cmake-build-debug/CMakeFiles/CMakeError.log".

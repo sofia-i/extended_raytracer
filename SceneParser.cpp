@@ -21,6 +21,14 @@ vec3<double> SceneParser::readInVector(std::ifstream& infile){
     return vec3<double>(x, y, z);
 }
 
+vec3<double>* SceneParser::readInVectorPtr(std::ifstream& infile){
+    double x; double y; double z;
+    infile >> x;
+    infile >> y;
+    infile >> z;
+    return new vec3<double>(x, y, z);
+}
+
 Object* SceneParser::readInSphere(std::string objDescription, std::ifstream& infile) {
     std::string description;
     infile >> description;
@@ -67,9 +75,9 @@ Object* SceneParser::readInTriangle(std::string objDescription, std::ifstream& i
     std::string description;
     
     // take in the vertices
-    std::vector<vec3<double>> vertices;
+    std::vector<vec3<double>*> vertices;
     for(int i = 0; i < 3; ++i) {
-        vec3<double> vertex = readInVector(infile);
+        vec3<double>* vertex = readInVectorPtr(infile);
         vertices.push_back(vertex);
     }
 

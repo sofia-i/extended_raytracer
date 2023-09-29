@@ -8,37 +8,44 @@
 #include "Mesh.hpp"
 #include "Triangle.hpp"
 #include <vector>
-#include <Eigen/Dense>
-
-using Eigen::MatrixXd;
+#include <map>
 
 void Mesh::computeBBInfo() {
-    bb_xmin = vertices.at(0).x();
-    bb_xmax = vertices.at(0).x();
-    bb_ymin = vertices.at(0).y();
-    bb_ymax = vertices.at(0).y();
-    bb_zmin = vertices.at(0).z();
-    bb_zmax = vertices.at(0).z();
-    for(vec3<double> vertex : vertices) {
-        if(vertex.x() < bb_xmin) {
-            bb_xmin = vertex.x();
+    std::map<vec3<double>*, std::vector<Triangle*>>::iterator it;
+
+    it = vertices.begin();
+    vec3<double>* first_vertex = it->first;
+    
+    bb_xmin = first_vertex->x();
+    bb_xmax = first_vertex->x();
+    bb_ymin = first_vertex->y();
+    bb_ymax = first_vertex->y();
+    bb_zmin = first_vertex->z();
+    bb_zmax = first_vertex->z();
+    
+    for (it = vertices.begin(); it != vertices.end(); it++)
+    {
+        vec3<double>* vertex = it->first;
+        
+        if(vertex->x() < bb_xmin) {
+            bb_xmin = vertex->x();
         }
-        else if(vertex.x() > bb_xmax) {
-            bb_xmax = vertex.x();
+        else if(vertex->x() > bb_xmax) {
+            bb_xmax = vertex->x();
         }
         
-        if(vertex.y() < bb_ymin) {
-            bb_ymin = vertex.y();
+        if(vertex->y() < bb_ymin) {
+            bb_ymin = vertex->y();
         }
-        else if(vertex.y() > bb_ymax) {
-            bb_ymax = vertex.y();
+        else if(vertex->y() > bb_ymax) {
+            bb_ymax = vertex->y();
         }
         
-        if(vertex.z() < bb_zmin) {
-            bb_zmin = vertex.z();
+        if(vertex->z() < bb_zmin) {
+            bb_zmin = vertex->z();
         }
-        else if(vertex.z() > bb_zmax) {
-            bb_zmax = vertex.z();
+        else if(vertex->z() > bb_zmax) {
+            bb_zmax = vertex->z();
         }
     }
 }
@@ -60,6 +67,7 @@ bool Mesh::fallsInBoundingBox(vec3<double> point) {
     return true;
 }
 
+/* REALLY BIG ASSUMPTION HERE IS THAT THE */
 double Mesh::findRayRectangleIntersection(std::vector<vec3<double>> vertices, Ray ray) {
     // assuming the vertices are specified in CCW order
     vec3<double> vector1 = getUnitVector(vertices.at(0) - vertices.at(1));
@@ -104,89 +112,158 @@ double Mesh::findRayRectangleIntersection(std::vector<vec3<double>> vertices, Ra
     return t;
 }
 
-double Mesh::findRayBBIntersection(Ray ray) {
+/* REALLY BIG ASSUMPTION HERE IS THAT THE */
+double Mesh::findRayPlaneIntersection(std::vector<vec3<double>> vertices, Ray ray) {
+    // assuming the vertices are specified in CCW order
+    vec3<double> vector1 = getUnitVector(vertices.at(0) - vertices.at(1));
+    vec3<double> vector2 = getUnitVector(vertices.at(2) - vertices.at(1));
+    
+    vec3<double> normal = getUnitVector(cross(vector2, vector1));
+    
+    // check if the ray intersects the plane containing the rectangle
+    // information about the plane equation
+    double a = normal[0];
+    double b = normal[1];
+    double c = normal[2];
+    
+    vec3<double> vertex = vertices.at(0);
+    double d = -a * vertex.x() - b * vertex.y() - c * vertex.z();
+    
+    // extract out the ray info
+    vec3<double> ray_o = ray.getOrigin();
+    vec3<double> ray_d = ray.getDirection();
+    
+    double denominator = (a * ray_d.x() + b * ray_d.y() + c * ray_d.z());
+    if(denominator == 0) { return -1; }
+    double t = -(a * ray_o.x() + b * ray_o.y() + c * ray_o.z() + d) / denominator;
+    
+    return t;
+}
+
+bool Mesh::intersectsBB(Ray ray) {
     // bounding box is 6 rectangles
-    std::vector<vec3<double>> frontVertices;
-    frontVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmax));
-    frontVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmax));
-    frontVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmax));
-    frontVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmax));
-    double frontResult = findRayRectangleIntersection(frontVertices, ray);
+    std::vector<vec3<double>> frontVertices{
+        vec3<double>(bb_xmin, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmax),
+        vec3<double>(bb_xmin, bb_ymin, bb_zmax)
+    };
+    double frontResult = findRayPlaneIntersection(frontVertices, ray);
     if(frontResult > 0) {
-        return frontResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(frontResult);
+        // pass x and y bounds
+        double intersection_x = intersectionPoint.x();
+        double intersection_y = intersectionPoint.y();
+        if(intersection_x >= bb_xmin && intersection_x <= bb_xmax &&
+           intersection_y >= bb_ymin && intersection_y <= bb_ymax) {
+            return true;
+        }
     }
     
-    std::vector<vec3<double>> backVertices;
-    backVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmin));
-    backVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmin));
-    backVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmin));
-    backVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmin));
-    double backResult = findRayRectangleIntersection(backVertices, ray);
+    std::vector<vec3<double>> backVertices {
+        vec3<double>(bb_xmin, bb_ymin, bb_zmin),
+        vec3<double>(bb_xmax, bb_ymin, bb_zmin),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmin),
+        vec3<double>(bb_xmin, bb_ymin, bb_zmin)
+    };
+    double backResult = findRayPlaneIntersection(backVertices, ray);
     if(backResult > 0) {
-        return backResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(backResult);
+        // pass x and y bounds
+        double intersection_x = intersectionPoint.x();
+        double intersection_y = intersectionPoint.y();
+        if(intersection_x >= bb_xmin && intersection_x <= bb_xmax &&
+           intersection_y >= bb_ymin && intersection_y <= bb_ymax) {
+            return true;
+        }
     }
     
-    std::vector<vec3<double>> leftVertices;
-    leftVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmin));
-    leftVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmax));
-    leftVertices.push_back(vec3<double>(bb_xmin, bb_ymax, bb_zmax));
-    leftVertices.push_back(vec3<double>(bb_xmin, bb_ymax, bb_zmin));
-    double leftResult = findRayRectangleIntersection(leftVertices, ray);
+    std::vector<vec3<double>> leftVertices{
+        vec3<double>(bb_xmin, bb_ymin, bb_zmin),
+        vec3<double>(bb_xmin, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmin, bb_ymax, bb_zmax),
+        vec3<double>(bb_xmin, bb_ymax, bb_zmin)
+    };
+    double leftResult = findRayPlaneIntersection(leftVertices, ray);
     if(leftResult > 0) {
-        return leftResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(leftResult);
+        // pass y and z bounds
+        double intersection_y = intersectionPoint.y();
+        double intersection_z = intersectionPoint.z();
+        if(intersection_y >= bb_ymin && intersection_y <= bb_ymax &&
+           intersection_z >= bb_zmin && intersection_z <= bb_zmax) {
+            return true;
+        }
     }
     
-    std::vector<vec3<double>> rightVertices;
-    rightVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmin));
-    rightVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmax));
-    rightVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmax));
-    rightVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmin));
-    double rightResult = findRayRectangleIntersection(rightVertices, ray);
+    std::vector<vec3<double>> rightVertices{
+        vec3<double>(bb_xmax, bb_ymin, bb_zmin),
+        vec3<double>(bb_xmax, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmin)
+    };
+    double rightResult = findRayPlaneIntersection(rightVertices, ray);
     if(rightResult > 0) {
-        return rightResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(rightResult);
+        // pass y and z bounds
+        double intersection_y = intersectionPoint.y();
+        double intersection_z = intersectionPoint.z();
+        if(intersection_y >= bb_ymin && intersection_y <= bb_ymax &&
+           intersection_z >= bb_zmin && intersection_z <= bb_zmax) {
+            return true;
+        }
     }
     
-    std::vector<vec3<double>> topVertices;
-    topVertices.push_back(vec3<double>(bb_xmin, bb_ymax, bb_zmax));
-    topVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmax));
-    topVertices.push_back(vec3<double>(bb_xmax, bb_ymax, bb_zmin));
-    topVertices.push_back(vec3<double>(bb_xmin, bb_ymax, bb_zmin));
-    double topResult = findRayRectangleIntersection(topVertices, ray);
+    std::vector<vec3<double>> topVertices{
+        vec3<double>(bb_xmin, bb_ymax, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymax, bb_zmin),
+        vec3<double>(bb_xmin, bb_ymax, bb_zmin)
+    };
+    double topResult = findRayPlaneIntersection(topVertices, ray);
     if(topResult > 0) {
-        return topResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(topResult);
+        // pass x and z bounds
+        double intersection_x = intersectionPoint.x();
+        double intersection_y = intersectionPoint.y();
+        if(intersection_x >= bb_xmin && intersection_x <= bb_xmax &&
+           intersection_y >= bb_ymin && intersection_y <= bb_ymax) {
+            return true;
+        }
     }
     
-    std::vector<vec3<double>> bottomVertices;
-    bottomVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmax));
-    bottomVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmax));
-    bottomVertices.push_back(vec3<double>(bb_xmax, bb_ymin, bb_zmin));
-    bottomVertices.push_back(vec3<double>(bb_xmin, bb_ymin, bb_zmin));
-    double bottomResult = findRayRectangleIntersection(bottomVertices, ray);
+    std::vector<vec3<double>> bottomVertices{
+        vec3<double>(bb_xmin, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymin, bb_zmax),
+        vec3<double>(bb_xmax, bb_ymin, bb_zmin),
+        vec3<double>(bb_xmin, bb_ymin, bb_zmin)
+    };
+    double bottomResult = findRayPlaneIntersection(bottomVertices, ray);
     if(bottomResult > 0) {
-        return bottomResult;
+        vec3<double> intersectionPoint = ray.getPointOnRay(bottomResult);
+        // pass x and z bounds
+        double intersection_x = intersectionPoint.x();
+        double intersection_y = intersectionPoint.y();
+        if(intersection_x >= bb_xmin && intersection_x <= bb_xmax &&
+           intersection_y >= bb_ymin && intersection_y <= bb_ymax) {
+            return true;
+        }
     }
     
-    return -1.0;
+    return false;
 }
 
 double Mesh::findRayObjectIntersection(Ray ray) {
     // check if intersects with bounding box
-    if(findRayBBIntersection(ray) < 0) {
+    if(!intersectsBB(ray)) {
         return -1.0;
     }
     
     // else check all triangles
-    for(int i = 0; i < vertices.size(); ++i) {
-        std::vector<vec3<double>> triangle_vertices;
-        triangle_vertices.push_back(vertices.at(i));
-        triangle_vertices.push_back(vertices.at((i+1)%vertices.size()));
-        triangle_vertices.push_back(vertices.at((i+2)%vertices.size()));
-        
-        Triangle triangle = Triangle(triangle_vertices);
-        double testT = triangle.findRayObjectIntersection(ray);
+    for(int i = 0; i < triangles.size(); ++i) {
+        Triangle* triangle = triangles.at(i);
+        double testT = triangle->findRayObjectIntersection(ray);
         if(testT > 0) {
-            // triangleIndex = i;
-            mostRecentlyHitTriangleIndex = i;
             return testT;
         }
     }
@@ -202,46 +279,47 @@ int mod(const int x, const int y)
 }
 
 void Mesh::computeVertexNormals() {
-    vec3<double> planeNormalSum = vec3<double>(0,0,0);
+    
     // each vertex
-    for(int i = 0; i < vertices.size(); ++i) {
+    std::map<vec3<double>*, std::vector<Triangle*>>::iterator it;
+    for (it = vertices.begin(); it != vertices.end(); it++) {
+        vec3<double> planeNormalSum = vec3<double>(0,0,0);
+        
+        vec3<double>* vertex = it->first;
+        std::vector<Triangle*> connected_triangles = it->second;
+        
         // each triangle connected to vertex
-        for(int j = -2; j <= 0; ++j) {
-            int idx0 = mod((i + j), (int)vertices.size());
-            int idx1 = mod((i + j + 1), (int)vertices.size());
-            int idx2 = mod((i + j + 2), (int)vertices.size());
-            std::vector<vec3<double>> triangle_vertices;
-            triangle_vertices.push_back(vertices.at(idx0));
-            triangle_vertices.push_back(vertices.at(idx1));
-            triangle_vertices.push_back(vertices.at(idx2));
-            
-            Triangle triangle = Triangle(triangle_vertices);
-            planeNormalSum += triangle.getPlaneNormal();
+        for(Triangle* triangle : connected_triangles) {
+            planeNormalSum += triangle->getPlaneNormal();
         }
-        vec3<double> vectorNormal = (1.0/3.0) * planeNormalSum;
-        normals.push_back(getUnitVector(vectorNormal));
+        
+        vec3<double> vectorNormal = getUnitVector(planeNormalSum);
+        vertex_normals.insert({vertex, vectorNormal});
     }
 }
 
 vec3<double> Mesh::getIntersectionNormal(vec3<double> intersectionPoint) {
-    double x = intersectionPoint.x();
-    double y = intersectionPoint.y();
-    double z = intersectionPoint.z();
-    int firstVertexIdx = mostRecentlyHitTriangleIndex;
-    int secondVertexIdx = (firstVertexIdx + 1) % vertices.size();
-    int thirdVertexIdx = (firstVertexIdx + 2) % vertices.size();
+    Triangle* hitTriangle = nullptr;
+    // check all triangles
+    for(int i = 0; i < triangles.size(); ++i) {
+        Triangle* triangle = triangles.at(i);
+        bool pointInPlane = triangle->isInPlane(intersectionPoint);
+        bool pointInTriangle = triangle->isInTriangle(intersectionPoint);
+        if(pointInPlane && pointInTriangle) {
+            hitTriangle = triangle;
+            break;
+        }
+    }
     
-    vec3<double> firstVertex = vertices.at(firstVertexIdx);
-    vec3<double> secondVertex = vertices.at(secondVertexIdx);
-    vec3<double> thirdVertex = vertices.at(thirdVertexIdx);
-    
-    vec3<double> firstVector = getUnitVector(firstVertex - thirdVertex);
-    vec3<double> secondVector = getUnitVector(firstVertex - secondVertex);
+    std::vector<vec3<double>*> triangle_vertices = hitTriangle->getVertices();
+    vec3<double>* firstVertex = triangle_vertices.at(0);
+    vec3<double>* secondVertex = triangle_vertices.at(1);
+    vec3<double>* thirdVertex = triangle_vertices.at(2);
     
     // stack exchange
-    vec3<double> v2_1 = firstVertex - secondVertex;
-    vec3<double> v2_3 = thirdVertex - secondVertex;
-    vec3<double> v2_t = intersectionPoint - secondVertex;
+    vec3<double> v2_1 = *firstVertex - *secondVertex;
+    vec3<double> v2_3 = *thirdVertex - *secondVertex;
+    vec3<double> v2_t = intersectionPoint - *secondVertex;
     
     double d00 = dot(v2_1, v2_1);
     double d01 = dot(v2_1, v2_3);
@@ -255,6 +333,10 @@ vec3<double> Mesh::getIntersectionNormal(vec3<double> intersectionPoint) {
     double bary_1 = (d00 * d21 - d01 * d20) / denom; // weight related to p3
     double bary_2 = 1.0 - bary_0 - bary_1; // weight related to p2
     
-    return bary_0 * normals.at(firstVertexIdx) + bary_2 * normals.at(secondVertexIdx) + bary_1 * normals.at(thirdVertexIdx);
+    vec3<double> firstVertexNormal = this->vertex_normals.at(firstVertex);
+    vec3<double> secondVertexNormal = this->vertex_normals.at(secondVertex);
+    vec3<double> thirdVertexNormal = this->vertex_normals.at(thirdVertex);
+    
+    return bary_0 * firstVertexNormal + bary_2 * secondVertexNormal + bary_1 * thirdVertexNormal;
     
 }
